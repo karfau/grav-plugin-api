@@ -66,7 +66,7 @@ class Pages extends Resource
      *
      * @return array the single page
      */
-    public function postItem()
+/*    public function postItem()
     {
         $data = $this->getPost();
         $pages = $this->grav['pages'];
@@ -87,7 +87,7 @@ class Pages extends Resource
         $page = $pages->dispatch('/' . $this->getIdentifier(), false);
 
         return $this->buildPageStructure($page);
-    }
+    }*/
 
     /**
      * Updates an existing page
@@ -114,7 +114,7 @@ class Pages extends Resource
         }
 
         $page = $this->page($this->getIdentifier());
-        $page = $this->preparePage($page, $data);
+        $page = $this->updatePageData($page, $data);
         $page->save();
 
         $page = $pages->dispatch('/' . $this->getIdentifier(), false);
@@ -136,7 +136,7 @@ class Pages extends Resource
      *
      * @return bool
      */
-    public function deleteItem()
+/*    public function deleteItem()
     {
         $data = $this->getPost();
 
@@ -165,6 +165,29 @@ class Pages extends Resource
         }
 
         return '';
+    }*/
+
+
+//
+    /**
+     * source https://github.com/gosseti/grav-plugin-api/blob/b3e5fb09820e10b74d8f8e9ad52653da2788be47/resources/pages.php
+     *
+     * @param \Grav\Common\Page\Page $page
+     * @return array
+     */
+    public static function getPageMedia($page) {
+        $allmedia = $page->media()->all();
+        $media = array();
+        foreach ($allmedia as $item) {
+            $mi = array();
+            $mi['type'] = $item->type;
+            $mi['mime'] = $item->mime;
+            $mi['filename'] = $item->filename;
+            $mi['width'] = $item->width;
+            $mi['height'] = $item->height;
+            $media[] = $mi;
+        }
+        return $media;
     }
 
     /**
@@ -172,75 +195,16 @@ class Pages extends Resource
      *
      * @todo: add commented fields
      *
+     * @param \Grav\Common\Page\Page $page
      * @return array the single page
      */
-    private function buildPageStructure($page) {
+    public static function buildPageStructure($page) {
+        // TODO what about possible fields for the page type?
         return [
-            'active' => $page->active(),
-            'activeChild' => $page->activeChild(),
-            // 'adjacentSibling' => $page->adjacentSibling(),
-            'blueprintName' => $page->blueprintName(),
-            //'blueprints' => $page->blueprints(),
-            'children' => $page->children(),
-            'childType' => $page->childType(),
-            'content' => $page->content(),
-            'date' => $page->date(),
-            'eTag' => $page->eTag(),
-            'expires' => $page->expires(),
-            'exists' => $page->exists(),
-            'extension' => $page->extension(),
-           // 'extra' => $page->extra(),
-            'file' => $page->file(),
-            'filePath' => $page->filePath(),
-            'filePathClean' => $page->filePathClean(),
-            'folder' => $page->folder(),
-            'frontmatter' => $page->frontmatter(),
-            'getRawContent' => $page->getRawContent(),
+            'content' => $page->rawMarkdown(),
             'header' => $page->header(),
-            'home' => $page->home(),
-            'id' => $page->id(),
-            'isDir' => $page->isDir(),
-            // 'isFirst' => $page->isFirst(),
-            // 'isLast' => $page->isLast(),
-            'isPage' => $page->isPage(),
-            'language' => $page->language(),
-            'lastModified' => $page->lastModified(),
-            'link' => $page->link(),
-            'maxCount' => $page->maxCount(),
-            'menu' => $page->menu(),
-            'metadata' => $page->metadata(),
-            'modified' => $page->modified(),
-            'modularTwig' => $page->modularTwig(),
-            'modular' => $page->modular(),
-            'name' => $page->name(),
-            // 'nextSibling' => $page->nextSibling(),
-            'order' => $page->order(),
-            'orderDir' => $page->orderDir(),
-            'orderBy' => $page->orderBy(),
-            'orderManual' => $page->orderManual(),
-            'parent' => $page->parent(),
-            'path' => $page->path(),
-            'permalink' => $page->permalink(),
-            // 'prevSibling' => $page->prevSibling(),
-            'publishDate' => $page->publishDate(),
-            'published' => $page->published(),
-            'raw' => $page->raw(),
-            'rawMarkdown' => $page->rawMarkdown(),
-            'rawRoute' => $page->rawRoute(),
-            'root' => $page->root(),
-            'routable' => $page->routable(),
-            'route' => $page->route(),
-            'routeCanonical' => $page->routeCanonical(),
-            'slug' => $page->slug(),
-            'summary' => $page->summary(),
-            'taxonomy' => $page->taxonomy(),
-            'template' => $page->template(),
-            'title' => $page->title(),
-            'translatedLanguages' => $page->translatedLanguages(),
-            'unpublishDate' => $page->unpublishDate(),
-            'untranslatedLanguages' => $page->untranslatedLanguages(),
-            'url' => $page->url(),
-            'visible' => $page->visible(),
+            'route' => $page->routeCanonical(),
+            'media' => self::getPageMedia($page),
         ];
     }
 
@@ -349,26 +313,12 @@ class Pages extends Resource
     /**
      * Prepare a page to be stored: update its folder, name, template, header and content
      *
-     * @param \Grav\Common\Page\Page $page
+     * @param Page $page
      * @param object                 $post
      */
-    private function preparePage(\Grav\Common\Page\Page $page, $post = null)
+    public static function updatePageData(Page &$page, $post = null)
     {
         $post = (array)$post;
-
-        if (isset($post['order'])) {
-            $order = max(0, (int) isset($post['order']) ? $post['order'] : $page->value('order'));
-            $ordering = $order ? sprintf('%02d.', $order) : '';
-            $slug = empty($post['folder']) ? $page->value('folder') : (string) $post['folder'];
-            $page->folder($ordering . $slug);
-        }
-
-        if (isset($post['name']) && !empty($post['name'])) {
-            $type = (string) strtolower($post['name']);
-            $name = preg_replace('|.*/|', '', $type);
-            $page->name($name);
-            $page->template($type);
-        }
 
         if (isset($post['header'])) {
             $header = $post['header'];
@@ -376,15 +326,9 @@ class Pages extends Resource
             $page->frontmatter(Yaml::dump((array) $page->header()));
         }
 
-        $language = trim(basename($page->extension(), 'md'), '.') ?: null;
-        $filename = str_replace($language, $post['lang'], $page->name());
-        $path = $page->path() . DS . $filename;
-        $page->filePath($path);
-
         if (isset($post['content'])) {
             $page->rawMarkdown((string) $post['content']);
             $page->content((string) $post['content']);
-            $page->file()->markdown($page->rawMarkdown());
         }
 
 

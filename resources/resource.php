@@ -46,7 +46,7 @@ class Resource
      *
      * @return string the method name, lowercase
      */
-    protected function getMethod()
+    public static function getMethod()
     {
         return strtolower($_SERVER['REQUEST_METHOD']);
     }
@@ -197,7 +197,7 @@ class Resource
      * @param array $post
      * @return array
      */
-    protected function getPost()
+    public static function getPost()
     {
         return json_decode(file_get_contents('php://input'));
     }
